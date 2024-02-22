@@ -1,6 +1,8 @@
 import pygame
 import random
 import math
+import cv2
+import numpy as np
 
 # Initialize Pygame
 pygame.init()
@@ -141,10 +143,17 @@ class GameObject:
 # Initialize objects
 objects = [GameObject() for _ in range(NUM_OBJECTS)]
 
+# Set up the video writer
+frame_rate = 30
+frame_size = (width, height)
+out = cv2.VideoWriter(
+    "gameplay.avi", cv2.VideoWriter_fourcc(*"XVID"), frame_rate, frame_size
+)
+
 # Main game loop
 running = True
 clock = pygame.time.Clock()
-
+done_recording = 0
 while running:
     dt = clock.tick(60) / 1000  # Delta time in seconds
 
@@ -154,6 +163,7 @@ while running:
 
     # Move and draw objects
     screen.fill(WHITE)
+    all_one_type = False
     for obj in objects:
         obj.move(dt)
     new_objects = []
@@ -172,8 +182,20 @@ while running:
 
     for obj in final_objects:
         obj.draw(screen)
-    
+
+    # Save the frame
+    frame = np.array(pygame.surfarray.array3d(screen))
+    frame = cv2.transpose(frame)
+    frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+    out.write(frame)
+
     pygame.display.flip()
     clock.tick(60)
 
+    # chck if all objects are of the same type
+    all_one_type = all(obj.type == final_objects[0].type for obj in final_objects)
+    if all_one_type:
+        break
+
+out.release()
 pygame.quit()
